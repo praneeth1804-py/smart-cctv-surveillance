@@ -1,3 +1,23 @@
+import os
+import cv2
+from ultralytics import YOLO
+
+# =====================================
+# PATH SETUP
+# =====================================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, "yolov8n.pt")
+
+# =====================================
+# LOAD MODEL ONCE (GLOBAL)
+# =====================================
+print("Loading YOLO model...")
+model = YOLO(MODEL_PATH)
+
+
+# =====================================
+# PROCESS VIDEO (RENDER SAFE VERSION)
+# =====================================
 def process_video(input_path):
 
     cap = cv2.VideoCapture(input_path)
@@ -36,14 +56,14 @@ def process_video(input_path):
 
         frame_count += 1
 
-        # ✅ PROCESS ONLY EVERY 5TH FRAME
-        if frame_count % 5 != 0:
+        # ✅ Process only every 10th frame (safer for Render Free)
+        if frame_count % 10 != 0:
             continue
 
-        # ✅ RESIZE (BIG MEMORY SAVE)
+        # ✅ Resize to reduce memory usage
         frame = cv2.resize(frame, (width, height))
 
-        # ✅ LIGHT INFERENCE
+        # ✅ Run lightweight YOLO inference
         results = model(frame, verbose=False)
 
         if results[0].boxes is not None and len(results[0].boxes) > 0:
