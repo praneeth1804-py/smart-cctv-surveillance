@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Smart CCTV Surveillance</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background:#0f172a;
+    color:white;
+    text-align:center;
+    margin:0;
+}
+
+.container{
+    margin-top:100px;
+}
+
+h1{
+    margin-bottom:30px;
+}
+
+button{
+    padding:12px 25px;
+    background:#22c55e;
+    border:none;
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+    border-radius:6px;
+}
+
+button:hover{
+    background:#16a34a;
+}
+
+input{
+    margin:20px;
+}
+
+.secondary-btn{
+    background:#3b82f6;
+    margin-top:15px;
+}
+
+.secondary-btn:hover{
+    background:#2563eb;
+}
+
+.footer{
+    position:fixed;
+    bottom:10px;
+    width:100%;
+    font-size:12px;
+    color:#94a3b8;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🚨 Smart CCTV Surveillance System</h1>
+
+<!-- Upload Form -->
+<form action="/upload" method="post"
+      enctype="multipart/form-data">
+
+<input type="file" name="video" required>
+
+<br>
+
+<button type="submit">
+Detect Anomaly
+</button>
+
+</form>
+
+<br><br>
+
+<!-- Sample Videos Button -->
+<a href="/samples">
+    <button class="secondary-btn">
+        Try Sample Surveillance Videos
+    </button>
+</a>
+
+</div>
+
+<div class="footer">
+    AI-Based Unusual Motion Detection | Final Year Project
+</div>
+
+</body>
+</html>

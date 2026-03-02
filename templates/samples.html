@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sample Videos</title>
+</head>
+<body>
+
+<h2>Select Sample Surveillance Video</h2>
+
+{% for video in videos %}
+    <div style="margin:10px">
+        <a href="{{ url_for('run_sample', video=video) }}">
+            ▶ {{ video }}
+        </a>
+    </div>
+{% endfor %}
+
+<br>
+<a href="/">⬅ Back Home</a>
+
+</body>
+</html>
