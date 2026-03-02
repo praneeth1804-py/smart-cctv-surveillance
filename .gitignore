@@ -5,3 +5,7 @@ shanghaitech/
 models/
 .ipynb_checkpoints/
 __pycache__/ 
+static/outputs/
+static/uploads/
+*.mp4
+*.avi
