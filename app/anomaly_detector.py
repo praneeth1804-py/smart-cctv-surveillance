@@ -1,136 +1,65 @@
 import os
 import cv2
-import time
-import subprocess
-import math
 from ultralytics import YOLO
-from collections import defaultdict, deque
 
-
-# ===============================
-# LOAD YOLO
-# ===============================
+# =====================================
+# LOAD MODEL ONCE (GLOBAL)
+# =====================================
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "app", "yolov8n.pt")
+MODEL_PATH = os.path.join(BASE_DIR, "yolov8n.pt")
+
 model = YOLO(MODEL_PATH)
 
-# ===============================
-# TRACK MEMORY
-# ===============================
-track_history = defaultdict(lambda: deque(maxlen=8))
+# =====================================
+# PROCESS VIDEO
+# =====================================
+def process_video(input_path):
 
-# movement multiplier
-MOVEMENT_RATIO = 1.2
-
-
-def process_video(video_path):
-
-    cap = cv2.VideoCapture(video_path)
+    cap = cv2.VideoCapture(input_path)
 
     if not cap.isOpened():
-        raise RuntimeError("Video open failed")
+        raise Exception("Could not open video file")
 
-    filename = os.path.splitext(os.path.basename(video_path))[0]
-    unique_id = int(time.time())
-
-    output_dir = os.path.join(BASE_DIR, "static", "outputs")
-    os.makedirs(output_dir, exist_ok=True)
-
-    temp_video = os.path.join(output_dir, f"temp_{unique_id}.avi")
-    final_video = os.path.join(output_dir, f"processed_{filename}_{unique_id}.mp4")
-
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if fps <= 1 or fps > 120:
-        fps = 25
-
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    out = cv2.VideoWriter(
-        temp_video,
-        cv2.VideoWriter_fourcc(*'XVID'),
-        fps,
-        (width, height)
+    output_filename = "processed_" + os.path.basename(input_path)
+    output_path = os.path.join(
+        BASE_DIR,
+        "static",
+        "outputs",
+        output_filename
     )
 
-    anomaly_found = False
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = 640
+    height = 360
+
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+    anomaly_detected = False
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        results = model.track(frame, persist=True, classes=[0])
+        # Resize to reduce memory usage
+        frame = cv2.resize(frame, (width, height))
 
-        if results[0].boxes.id is not None:
+        # Run detection (NO tracking)
+        results = model(frame)
 
-            boxes = results[0].boxes.xyxy.cpu().numpy()
-            ids = results[0].boxes.id.cpu().numpy()
+        boxes = results[0].boxes
 
-            for box, track_id in zip(boxes, ids):
+        if boxes is not None and len(boxes) > 0:
+            anomaly_detected = True
 
-                x1, y1, x2, y2 = map(int, box)
+        annotated_frame = results[0].plot()
 
-                cx = int((x1 + x2) / 2)
-                cy = int((y1 + y2) / 2)
-
-                box_width = max((x2 - x1), 1)
-
-                history = track_history[track_id]
-                history.append((cx, cy))
-
-                suspicious = False
-
-                # compare long displacement
-                if len(history) >= 6:
-                    old_x, old_y = history[0]
-
-                    movement = math.dist(
-                        (cx, cy),
-                        (old_x, old_y)
-                    )
-
-                    # movement relative to body size
-                    if movement > box_width * MOVEMENT_RATIO:
-                        suspicious = True
-
-                if suspicious:
-                    color = (0, 0, 255)
-                    label = "SUSPICIOUS"
-                    anomaly_found = True
-                else:
-                    color = (0, 255, 0)
-                    label = "Normal"
-
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-
-                cv2.putText(
-                    frame,
-                    label,
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    color,
-                    2
-                )
-
-        out.write(frame)
+        out.write(annotated_frame)
 
     cap.release()
     out.release()
 
-    subprocess.run([
-        r"C:\ffmpeg-2026-02-23-git-7b15039cdb-essentials_build\bin\ffmpeg.exe",
-        "-y",
-        "-i", temp_video,
-        "-vcodec", "libx264",
-        "-pix_fmt", "yuv420p",
-        final_video
-    ], check=True)
-
-    os.remove(temp_video)
-
-    return (
-        "outputs/" + os.path.basename(final_video),
-        anomaly_found
-    )
+    return f"outputs/{output_filename}", anomaly_detected
